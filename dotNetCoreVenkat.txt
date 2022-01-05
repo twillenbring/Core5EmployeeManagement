@@ -1,0 +1,1029 @@
+.Net Core Venkat
+
+	TargetFramework: netcoreapp3.1
+		-for .net framework Target Framework Moniker(TFM) is net451 --- this is the version 4.51
+	AspNetCoreHostingModel
+		-inProcess: specifies host app inside w3wp.exe IIS worker process
+		-outOfProcess: backend Asp.Net core app running the kestral server
+		-default: outOfProcess
+	PackageReference: specifies what nuget package are currently on the project
+		-Metapackage: no content just contains a list of dependencies (Microsoft.AspNetCore.App)
+
+Progam.cs
+	-initially starts as a console app
+	-Main method: starts the web application 
+		-CreateWebHostBuilder: builds the host that runs the app 
+			--CreateWebHostBuilder --> creates webhost with configured defaults
+				--->UseStartup: extension method 
+				***IWebHostBuilder UseStartup<TStartup>(this IWebHostBuilder hostBuilder)
+
+InProcess Hosting:
+	-CreatDefaultBuilder method: sets up web server, loading the host and application config from various config sources,
+					configures logging
+	-<AspNetCoreHostingModel>InProcess<AspNetCoreHostingModel>
+		---uses IIS and iisexpress.exe or w3wp.exe
+		---(System.Diagnostics.Process.GetCurrentProcess().ProcessName) ---> replaces "Hello World"
+	-only one server that is being used with Inprocess hosting
+	-Kestrel: cross platform server for asp.net core used by itself as an edge server
+	-process used to host the app is dotnet.exe 
+	---using dotnet cli: Kestrel is the server that is used and the name of that process is dotnet.exe
+
+OutOfProcess Hosting:
+	-change the <AspNetCoreHostingModel>OutOfProcess<AspNetCoreHostingModel> ---otherwise remove this line default 			outofprocess hosting is used 
+	-2 servers used: internal and external
+		--internal: Kesteral
+		--external: IIS, NgIX, or Apache
+	-Kestrel doesn't face the internet instead it faces IIS, Nginx, or Apache (these are known as reverse proxy servers)
+	-reverse proxy server is used because it helps with load balancing and security
+
+LaunchSettings.json file:
+	only used during development:
+	*Project *Hosting Setting Ignored *Only uses Kestrel
+	*IISExpress *InProcess *Only uses IISExpress
+	*IISExpress *OutOfProcess *Kestral(internal) *IISExpress(external web server)
+	*IIS *InProcess *Only one web server -IIS
+
+AppSettings.json file:
+	"MyKey": "Value of myKey from appsettings"
+	1)constructor for startup class (IConfiguration config)
+		_config = config
+	2).WriteAsync(_config["MyKey"]);
+	*appsetting.development.json overrides appsettings.json file if the same name of a key 		is used
+	***This is the order _config uses to read
+		1)Files (appsettings.json, appsettings.development.json
+		2)User secrets
+		3)Environmne variables
+		4)Command line args 
+		***Everything from the bottom up overrides the one above if the same Key is used
+
+Middleware
+	-sets up processing pipeline 
+	-also processes outgoing requests
+UseStaticFiles:
+	-UseDefaultFiles if used needs to be before UseStaticfiles, with default.html, or index.html for it to work.
+	-if want to use a default file that has a different name other than default or index.html do this:
+		DefaultFilesOptions dfFiles = new DefaultFilesOptions();
+		dfFiles.DefaultFileNames.Clear();
+		dfFiles.DefaultFilesNames.add("foo.html");
+		app.UseDefaultFiles(dfFiles);
+	-useFileServer() ==== can replace UseStaticFiles and UseDefaultFiles but if you want to use a default file with a 
+	different name do the following:
+		FileServerOptions fsOption = new FileServerOptions();
+		fsOption.DefaultFileNames.Clear();
+		fsOption.DefaultFilesNames.add("foo.html");
+		app.UseFileServer(fsOption);
+DeveloperExceptionPageOptions:
+	-create instance of this if want to customize exception page properties like SourcCodeLineCount = 10 ---- sets exception page
+	10 lines or less
+
+AddMvc vs AddMvcCore:
+	-MvcCore only adds a limited number of services but AddMvc adds all services 
+
+Add Controllers folder:
+	-inherit from controllers class
+
+Add Models folder:
+	-add Employee.cs class (Id, Name, Email, Department)
+	-add IEmplyeeRepository interface (Employee GetEmployee(int Id);)
+	-add MockRepository:
+	public class MockEmployeeRepository : IEmployeeRepository
+	{
+    			private List<Employee> _employeeList;
+
+    			public MockEmployeeRepository()
+    			{
+        		_employeeList = new List<Employee>()
+        		{
+            		new Employee() { Id = 1, Name = "Mary", Department = "HR", Email = "mary@pragimtech.com" },
+            		new Employee() { Id = 2, Name = "John", Department = "IT", Email = "john@pragimtech.com" },
+            		new Employee() { Id = 3, Name = "Sam", Department = "IT", Email = "sam@pragimtech.com" },
+        		};
+    			}
+
+    		public Employee GetEmployee(int Id)
+    		{
+        	 return this._employeeList.FirstOrDefault(e => e.Id == Id);
+    		}
+	}
+	-add constructor injection to HomeController
+
+Add Dependency Injection in startup class:
+	-AddSingleton() - As the name implies, AddSingleton() method creates a Singleton service.
+	-AddTransient() - This method creates a Transient service. A new instance of a Transient service is created each time it is requested. 
+	-AddScoped() - This method creates a Scoped service. A new instance of a Scoped service is created once per request within the scope.
+	--We added this to startup: services.AddSingleton<IEmployeeRepository, MockEmployeeRepository>();
+
+//Content negotiation, and accept header (look this up) IMPORTANT for RESTful services 
+
+If want XML forma for return JsonResult action method change this in startup: services.AddMvc().AddXmlSerializerFormatter().
+
+Add View folder:
+	-Home
+		--Details
+		--Index
+		--Edit
+	-Employees (Because EmployeesController.cs)
+		--Details
+		--Index
+		--Edit
+Overloaded method on return View("Test") ....returns the view with Name Test ("../../MyViews/Test"): relative view file for folder 
+in the project
+
+Passing Data from a action method to a view:
+	-ViewData: loosely typed view
+		--Dictionary of weakly typed objects
+		--ViewData["Emplyee"] = model;
+		--ViewData["PageTitle"] = "Employee Details"
+		return View();
+	-----------In the View---------------
+		--<h3>@ViewData["PageTitle"]</h3>
+		--@{
+			var emplyee = ViewData["Employee"] as EmployeeManagement.Models.Employee //cast type because its complex not reg string
+		  }
+		--<div>
+			Name: @employee.Name
+		  </div>
+		<div>
+			Email: @employee.Email
+		</div>
+		<div>
+			Dept: @employee.Department
+		</div>
+	-ViewBag: dynamic property, no need to cast it to a specific type unlike ViewData
+		:ViewBag is a wrapper around ViewData (no compile time type checking) Errors are known at runtime 
+		--ViewBag.Employee = model
+		--ViewBag.PageTitle = "Employee Details"
+	----------In the View---------------
+		<h3>@ViewBag.PageTitle</h3>
+		<div> Name: @ViewBag.Employee.Name </div>
+		<div> Email: @ViewBag.Employee.Email </div>
+		<div> Dept: @ViewBag.Employee.Department</div>
+	-Strongly Typed View
+@model EmployeeManagement.Models.Employee
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+</head>
+<body>
+    <h3>@ViewBag.PageTitle</h3>
+    <div>
+        Name: @Model.Name
+    </div>
+    <div>
+        Email: @Model.Email
+    </div>
+    <div>
+        Department: @Model.Department
+    </div>
+</body>
+</html>
+
+ViewModel: 
+	-contains all the data a view needs
+	-ViewModels are also called as Data Transfer Objects or DTO in short.
+	-create a seperate class to contain all data view needs in this case replace ViewBag.PageTitle and it to ViewModel
+	----HomeDetailsViewMode.cs-----
+	public class HomeDetailsViewModel
+    	{
+        	public Employee Employee { get; set; }
+        	public string PageTitle { get; set; }
+    	}	
+
+	---Change the Details View-------
+	public ViewResult Details()
+{
+    // Instantiate HomeDetailsViewModel and store Employee details and PageTitle
+    HomeDetailsViewModel homeDetailsViewModel = new HomeDetailsViewModel()
+    {
+        Employee = _employeeRepository.GetEmployee(1),
+        PageTitle = "Employee Details"
+    };
+
+    // Pass the ViewModel object to the View() helper method
+    return View(homeDetailsViewModel);
+}
+	-----Details.cshtml---------
+@using EmployeeManagement.ViewModels.HomeDetailsViewModel
+<h3>@Model.PageTitle</h3>
+    <div>
+        Name: @Model.Employee.Name
+    </div>
+    <div>
+        Email: @Model.Employee.Email
+    </div>
+    <div>
+        Department: @Model.Employee.Department
+    </div>	
+
+Add IEnumberable list of Employee list and modify Index method
+	1) IEmployeeRepository: IEnumerable<Employee> GetAllEmployees();
+	2) MockEmployeeRepository: public IEnumerable<Employee> GetAllEmployees()
+        {
+            return _employeeList;
+        }
+	3)Index View:
+	@model IEnumerable<EmployeeManagement.Models.Employee>
+
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Department</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var employee in Model)
+            {
+                <tr>
+                    <td>
+                        @employee.Id
+                    </td>
+                    <td>
+                        @employee.Name
+                    </td>
+                    <td>
+                        @employee.Department
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</body>
+</html>
+
+Creating a Layout View
+	----View/Shared/_Layout.cshtml
+	<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+</head>
+<body>
+    <div>
+        @RenderBody()
+    </div>
+</body>
+</html>
+	----Details View is now changed
+	@model EmployeeManagement.ViewModels.HomeDetailsViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Employee Details";
+}
+
+<h3>@Model.PageTitle</h3>
+
+<div>
+    Name : @Model.Employee.Name
+</div>
+<div>
+    Email : @Model.Employee.Email
+</div>
+<div>
+    Department : @Model.Employee.Department
+</div>
+
+Add Section views that is optional (CustomScript.js) file
+	1)Add @RenderSection("Scripts") in the _Layout view
+	2)To make it optional in each view do the following:
+@if (IsSectionDefined("Scripts"))
+{
+    @RenderSection("Scripts", required: false)
+}
+	3)Add "Scripts" section in Details view:
+@section Scripts {
+    <script src="~/js/CustomScript.js"></script>
+}
+
+Add _ViewStart and get rid of the _Layout on Index and Details views
+	-there can be more than 1 _ViewStart file subfolders like views/home/_viewstart ovverrides views/_ViewStart 
+	-@{
+		if(User.IsInRole("Admin"))
+		{
+			Layout = "_AdminLayout"
+		}
+		else
+		{
+			Layout = "_NonAdminLayout"
+		}
+	 }
+
+Add _ViewImports in Views folder
+	-contains all the import files like @model ViewModels.HomeDetailsViewModel
+	-@using ....fully qualified namespace 
+	-this is also hierarchical 
+
+Routing in MVC
+	-endpoints.MapControllerRoute(
+                        name: "default",
+                        pattern: "{controller=Home}/{action=Index}/{id?}"
+                    ); //This is conventional routing 
+	-attribute routing
+		--[Route("")] ---this is the root localhost:44510
+		--[Route("Home")] ---localhost:44510/home
+		--[Route("Home/Index")] ---localhost:44510/home/index
+		--[Route("Home/Index/{id?}")] ---makes id optional 
+		--[Route("~/")] ---navigates to the root if there is route attribute on controller 
+	-added null collesing operator to the Details action method Details(int? id) 
+		---Employee = _employeeRepository.GetEmployee(id??1)
+		//if the value sent to method is not null use the value if it is null use 1 as the id 
+
+Tag Helpers:
+	-add to _ViewImports: @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+	-Options for Buttons in Index View
+		1) @foreach (var employee in Model)
+			{
+    				<a href="/home/details/@employee.Id">View</a>
+			}
+		2)@Html.ActionLink("View", "details", new { id = employee.Id })
+
+			generates an anchor element
+
+			<a href="/hom/details/5">View</a>
+		3)<a href="@Url.Action("details", "home", new {id = employee.id})" class="btn btn-primary">Show</a>
+		4)<a asp-controller="home" asp-action="details"
+    			asp-route-id="@employee.Id">View</a>
+
+			generates
+
+			<a href="/Home/details/5">View</a>
+	-use tag helpers instead because if you need to change default route to something like =companyname/{controller=home}/{action=index}
+		it will still work instead of changing every ActionLink and appending "companyname" in front of each href
+Image Tag Helpers
+	-use <asp-append-version="true"/> when you want to make sure a new image is used if the image is changed on the server otherwise 
+		if the image hasn't changed it will use the cached image (best of both worlds instead of disabling cache in Chrome developer tools
+
+Environment Tag Helpers
+	-loading cdn bootstrap or minified bootstrap css
+	-www.getbootstrap.com to get the bootstrap cdn
+	<environment include="Development" or use "exclude=Develeopment">
+	-Need these if using cdn for integrity if hash has changed: 
+	 	asp-fallback-test-class="sr-only" asp-fallback-test-property="position"
+            	asp-fallback-test-value="absolute"
+            	asp-suppress-fallback-integrity="true" />
+
+Add Navigtion bar in _Layout
+	<body>
+
+    <div class="container">
+        <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+            <a class="navbar-brand" asp-controller="home" asp-action="index">
+                <img src="~/images/employees.png" width="30" height="30">
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="collapsibleNavbar">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="home" asp-action="index">List</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="home" asp-action="create">Create</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div>
+            @RenderBody()
+        </div>
+
+        @if (IsSectionDefined("Scripts"))
+        {
+        @RenderSection("Scripts", required: false)
+        }
+    </div>
+
+</body>
+
+Add Create.cshtml
+	1)Create Action method in HomeController
+		-just return a View()
+	2)Add Create.cshtml
+<form asp-controller="home" asp-action="create" method="post" class="mt-3">
+    <div class="form-group row">
+        <label asp-for="Name" class="col-sm-2 col-form-label"></label> 
+        <div class="col-sm-10"> //asp-for === maps Name property to our Employee model (done using Model binding)
+				//label asp-for binds the Name property to Name input box when clicked grabs focus
+            <input asp-for="Name" class="form-control" placeholder="Name">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label asp-for="Email" class="col-sm-2 col-form-label"></label>
+        <div class="col-sm-10">
+            <input asp-for="Email" class="form-control" placeholder="Email">
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label asp-for="Department" class="col-sm-2 col-form-label"></label>
+        <div class="col-sm-10">
+            <select asp-for="Department" class="custom-select mr-sm-2"
+                    asp-items="Html.GetEnumSelectList<Dept>()"></select>
+			//asp-items: binds Dept enum to types of the Department 
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-10">
+            <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+    </div>
+</form>		
+
+ADD method is added:
+	1)IEmployeeRepository: Employee Add(Employee employee);
+	2)MockEmployeeRepository: 
+	public Employee Add(Employee employee)
+    		{
+        		employee.Id = _employeeList.Max(e => e.Id) + 1;
+        		_employeeList.Add(employee);
+        		return employee;
+    		}
+	3)public RedirectToActionResult Create(Employee employee)
+		{
+    			Employee newEmployee = _employeeRepository.Add(employee);
+    			return RedirectToAction("details", new { id = newEmployee.Id });
+		}
+	4)[HttpGet], [HttpPost] on the Create Methods
+	5)Use AddSingleton in the startup class if there is a NullReferenceException
+
+Model Binding looks for dat in the Http request in these ways and order
+	1)Form Values
+	2)Route Values
+	3)Query Strings
+
+Form Validation:
+	1)Apply validation attributes to properties [Required][RegularExpression(@"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
+            ErrorMessage = "Invalid email format")]
+	2)Check ModelState.IsValid in the controller action method
+	3)Use asp-validation-for="Name" "Email" etc and use asp-validation-summary="all" "model" etc
+
+AddTransient vs AddSingleton vs AddScoped
+	-AddSingleton: only 1 instance of service is created throughout the entire session and used throughout app
+	-AddScoped: creates new instance on every NEW Http request (Post request is a NEW http request) 
+	-AddTransient: a new instance is provided every time an instance is requested whether it si in teh scope of the same 
+		htt request or across differnt http requests
+
+Adding EntityFramework to project
+	1)add nuget package Microsoft.EntityFrameworkCore.SqlServer Or it could be .OracleServer etc
+	2)Create a AppDbContext class extend :DbContext
+	3)Create constructor:
+		public AppDbContext(DbContextOptions<AppDbContext> options)
+        		: base(options)
+	4)Add DbSet:public DbSet<Employee> Employees { get; set; }
+
+Add Connection String:
+	1)services.AddDbContextPool<AppDbContext>(
+            options => options.UseSqlServer(_config.GetConnectionString("EmployeeDBConnection"))); //in startup
+		-use ContextPool because:With DbContext pooling, an instance from the DbContext pool is provided if available, 
+		rather than creating a new instance.
+	2)Store connection string in appsettings.json: "ConnectionStrings": {
+    			"EmployeeDBConnection": "server=(localdb)\\MSSQLLocalDB;database=EmployeeDB;Trusted_Connection=true"
+  			}
+
+Repository Pattern:
+	1)Create a SqlEmployeeRepository and Inject AppDbContext into constructor
+	2)Implement IEmployeeRepository into the SqlEmplRep and build the methods add, create, delete, update getall..
+
+Add first Migration to initialize Database
+	-Add-Migration InitialCreate in the CLI 
+	-make sure Microsoft.EntityFrameworkCore.Tools is an added nuget package
+
+Using SSMS instead of localDb:
+	-installed Microsoft.EntityFramewokCore.Design on top of the .Tools, and .SqlServer
+	-added this method to the AppDbContext: 
+	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer(@"Server=DESKTOP-GE889D3; initial catalog=EmployeeDb; integrated security=true");
+        }
+	-connection string changed to this: "data source=DESKTOP-GE889D3; initial catalog=EmployeeDb; integrated security=true"
+	-ran: add-migration initialcreate
+	-ran: update-database (Then it worked)
+
+Installing SSMS and server downloads
+	-https://www.microsoft.com/en-us/sql-server/sql-server-downloads : downloads the server
+	-https://docs.microsoft.com/en-us/sql/ssms/download-sql-server-management-studio-ssms?redirectedfrom=MSDN&view=sql-server-ver15
+		: downloads SSMS
+
+Seed The Database:
+	-in AppDbContext: add this method:
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Seed();
+        }
+	-add class that impliments the Seed() method as extension method ModelBuilderExtensions.cs
+	public static void Seed(this ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Employee>().HasData(
+                    new Employee
+                    {
+                        Id = 1,
+                        Name = "Mary",
+                        Department = Dept.IT,
+                        Email = "mary@pragimtech.com"
+                    },
+                    new Employee
+                    {
+                        Id = 2,
+                        Name = "John",
+                        Department = Dept.HR,
+                        Email = "john@pragimtech.com"
+                    }
+                );
+        }
+	-add-migration SeedEmployeesTable
+	-update-database
+
+Keeping domain models and database schema in sync using migrations in asp.net core:
+	-if you add a migration and then update database you cannot use remove-migration on that migration it will throw an error
+	-so what you do is update-database {name of migration you want to keep} then the migrations preceding that migration can be removed using 	
+		remove-migration {name of migration}
+
+
+Uploading a file:
+	-use IFormFile as datatype in ViewModel so model binding is possible 
+	-usig jquery to show the name of the file in the input box like so
+	@section Scripts {
+        <script>
+            $(document).ready(function () {
+                $('.custom-file-input').on("change", function () {
+                    var fileName = $(this).val().split("\\").pop();
+                    $(this).next('.custom-file-label').html(fileName);
+                });
+            });
+        </script>
+    	}
+	-change datatype of Create action method in homecontroller to CreateViewModel
+	-inject the service: IWebHostEnvironment into the controller constructor so we can upload file to image folder in wwwroot
+	-change the details view to accept the image otherwise display noimage.jpg
+	-change index view to accept image and NOTICE: css to keep rows to 3 employees per row: style="min-width: 18rem; max-width:30.5%;"
+
+Uploading multiple files: 
+	-Part 54 .net core venkat
+
+Editing an existing employee (Update info):
+	-change the Edit button to this in Index view: <a asp-controller="home" asp-action="edit" asp-route-id="@employee.Id"
+    							class="btn btn-primary m-1">Edit</a>
+	-change the Edit button in the Details view to the same as above: except use Model.Employee.Id on the asp-route-id property
+	-create EmployeeEditViweModel: CreateViewModel ==== we need the Id property of the employee and new property called ExistingPhotoPath just in case the user
+		wants to change the photo of the employee 
+	-add Edit action method to HomeController: public ViewResult Edit(int id): Id comes via url and is populated using model binding 
+	-create Edit view for the edit action
+
+Post Edited view to the server
+	-add [HttpPost] public IActionResult Edit(EmployeeEditViewModel model) to homecontroller
+	-there is a private method to process the new image that is uploaded: ProcessUploadedFile
+
+Handle 404 errors
+	-id doesn't exist: in details action of homecontroller add: 
+		Employee employee = _employeeRepository.GetEmployee(id);
+    		if (employee == null)
+    		{
+        	Response.StatusCode = 404;
+        	return View("EmployeeNotFound", id);
+    		}
+	-do the same to edit action method
+	-add EmployeeNotFound view in the Home folder
+Handle other errors like not found url etc (CENTRALIZED ERROR Handling)
+	-add this to startup: 
+	   else
+            {
+                app.UseStatusCodePagesWithRedirects("/Error/{0}");
+            }
+	-Add errorcontroller:
+	-add NotFound view in Shared folder
+	-ErrorController:
+	var statusCodeResult =
+                HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
+
+            switch (statusCode)
+            {
+                case 404:
+                    ViewBag.ErrorMessage =
+                            "Sorry, the resource you requested could not be found";
+                    ViewBag.Path = statusCodeResult.OriginalPath;
+                    ViewBag.QS = statusCodeResult.OriginalQueryString;
+                    break;
+            }
+
+            return View("NotFound");
+	-Then in the NotFound.cshtml view
+		<h1>@ViewBag.ErrorMessage</h1>
+
+		<h1>@ViewBag.Path</h1>
+
+		<h1>@ViewBag.QS</h1>
+
+		<a asp-action="index" asp-controller="home">
+    		Click here to navigate to the home page
+		</a>
+
+Global Error Handler:
+	-add this to the startup in Configure method: app.UseExceptionHandler("/Error");
+	-add Error action method in ErrorController
+	-add Error.cshtml to Shared folder
+
+Logging Exceptions:
+	-add ILogger injected into ErrorController ILogger<ErrorController> --- generic param allows to group logging errors
+	-add this to Error action method: var exceptionHandlerPathFeature =
+                    HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+            logger.LogError($"The path {exceptionHandlerPathFeature.Path} threw an exception {exceptionHandlerPathFeature.Error}");
+
+	
+Logging to a file using NLog: 
+	-add this package NLog.Web.AspNetCore 
+	-add nlog.config to the root of the project add->textfile->
+<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <!-- the targets to write to -->
+  <targets>
+    <!-- write logs to file  -->
+    <target name="allfile" xsi:type="File"
+            fileName="C:\Users\Owner\Desktop\EmployeeManagement\DemoLogs\nlog-all-${shortdate}.log"/>
+  </targets>
+
+  <!-- rules to map from logger name to target -->
+  <rules>
+    <!--All logs, including from Microsoft-->
+    <logger name="*" minlevel="Trace" writeTo="allfile" />
+  </rules>
+</nlog>
+	-set nlog.config property to: "copy if newer"
+	-add this to CreateHostBuilder in program.cs
+	.ConfigureLogging((hostingContext, logging) =>
+                {
+                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+                    logging.AddDebug();
+                    logging.AddNLog();
+                })
+
+
+Setting up Identity in the project
+	1)AppDbContext now inherits from IdentityDbContext instead of DbContext
+	2)Need this nuget package: using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+	3)add this to ConfigurationServices in startup: services.AddIdentity<IdentityUser, IdentityRole>()
+        		.AddEntityFrameworkStores<AppDbContext>();
+		//AddEntityFrameworkStores --configures IdentityUser, and IdentiyRole in the sql server database
+	4)Add the middleware: app.UseAuthentication();
+	5)Add-Migration AddingIdentity
+		--if this error happens: Error : The entity type 'IdentityUserLogin<string>' requires a primary key to be defined
+		--do this in OnModelCreating method AppDbContext: base.OnModelCreating(modelBuilder);
+	6)Update-Database
+
+Add Register/Login page
+	-Add RegisterViewModel
+	-Add AccountController
+	-Add Register View Place this view in Views/Account folder
+	-Add navbar placeholder for Register in _Layout
+	-password strength: add this to the services in startup
+	services.Configure<IdentityOptions>(options =>
+            {
+                options.Password.RequiredLength = 5; //default length is 6
+                options.Password.RequiredUniqueChars = 1; //this is the default number
+                options.Password.RequireNonAlphanumeric = false;
+            });
+
+Add UserManager and SignInManager:
+	-inject these into the Account Controller
+	private readonly UserManager<IdentityUser> userManager;
+        private readonly SignInManager<IdentityUser> signInManager;
+
+        public AccountController(UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager)
+        {
+            this.userManager = userManager;
+            this.signInManager = signInManager;
+        }
+	-HttpPost for Register action
+	public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Copy data from RegisterViewModel to IdentityUser
+                var user = new IdentityUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email
+                };
+
+                // Store user data in AspNetUsers database table
+                var result = await userManager.CreateAsync(user, model.Password);
+
+                // If user is successfully created, sign-in the user using
+                // SignInManager and redirect to index action of HomeController
+                if (result.Succeeded)
+                {
+                    await signInManager.SignInAsync(user, isPersistent: false);
+                    return RedirectToAction("index", "home");
+                }
+
+                // If there are any errors, add them to the ModelState object
+                // which will be displayed by the validation summary tag helper
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            return View(model);
+        }
+Show or hide login or logout options:
+	-inject SignInManager into the _Layout view add namespace to _ViewImports
+	-add these lines to the Register <ul> item in the _Layout view
+<div class="collapse navbar-collapse" id="collapsibleNavbar">
+    <ul class="navbar-nav ml-auto">
+        @*If the user is signed-in display Logout link*@
+        @if (SignInManager.IsSignedIn(User))
+        {
+            <li class="nav-item">
+                <form method="post" asp-controller="account" asp-action="logout">
+                    <button type="submit" style="width:auto"
+                            class="nav-link btn btn-link py-0">
+                        Logout @User.Identity.Name
+                    </button>
+                </form>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="account" asp-action="register">
+                    Register
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="account" asp-action="login">
+                    Login
+                </a>
+            </li>
+        }
+    </ul>
+</div>
+	-add logout Action method to AccountController
+   [HttpPost]
+    public async Task<IActionResult> Logout()
+    {
+        await signInManager.SignOutAsync();
+        return RedirectToAction("index", "home");
+    }
+
+Add Login:
+	-add LoginViewModel: Email, Password, RememberMe properties
+	-add Login View
+	@model LoginViewModel
+
+@{
+    ViewBag.Title = "User Login";
+}
+
+<h1>User Login</h1>
+
+<div class="row">
+    <div class="col-md-12">
+        <form method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Password"></label>
+                <input asp-for="Password" class="form-control" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <div class="checkbox">
+                    <label asp-for="RememberMe">
+                        <input asp-for="RememberMe" />
+                        @Html.DisplayNameFor(m => m.RememberMe)
+                    </label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+</div>
+
+	-add Login Get and Post methods
+	 [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await signInManager.PasswordSignInAsync(
+                    model.Email, model.Password, model.RememberMe, false);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("index", "home");
+                }
+
+                ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
+            }
+
+            return View(model);
+        }
+
+Setup Authorization
+	-add middleware: app.UseAuthorization();
+	-use [Authorize] attributes on methods want restricted
+	-can do this globally this way but need [AllowAnonymous] on methods we want to be reached like login/register 
+		-add this to ConfigureServices in startup to set global authorization
+	services.AddMvc(config => {
+        	var policy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .Build();
+        	config.Filters.Add(new AuthorizeFilter(policy));
+    	});
+
+Stop Open Redirect Vulnerability:
+	-simple fix, add this to the login LocalRedirect(returnUrl); instead of just Redirect(rturnUrl)
+
+Add Client-Side validation:
+	-libman install: jquery-validation
+	-libman install: jquery-validate-unobtrusive
+	-add these in this order in the _Layout view
+		<script src="~/lib/jquery/jquery.js"></script>
+		<script src="~/lib/jquery-validate/jquery.validate.js"></script>
+		<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+Remote validation of Email:
+	-Add this method in the AccountController
+	[AcceptVerbs("Get", "Post")]
+        [AllowAnonymous]
+        public async Task<IActionResult> IsEmailInUse(string email)
+        {
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return Json(true);
+            }
+            else
+            {
+                return Json($"Email {email} is already in use.");
+            }
+        }
+	
+	-add Remote attribute on Email property of RegisterViewModel
+	[Remote(action: "IsEmailInUse", controller: "Account")]
+	-need 3 client-side libraries are required in the order specified for the remote validation to work listed on paragraph above
+
+Custom validation of Email: if you want certain domain to be registered like @pragimtech.com
+	-add this class to Utilites folder in root
+	public class ValidEmailDomainAttribute : ValidationAttribute
+	{
+    		private readonly string allowedDomain;
+
+    		public ValidEmailDomainAttribute(string allowedDomain)
+    		{
+        		this.allowedDomain = allowedDomain;
+    		}
+
+    		public override bool IsValid(object value)
+    		{
+        		string[] strings = value.ToString().Split('@');
+        		return strings[1].ToUpper() == allowedDomain.ToUpper();
+    		}
+	}
+	-add this attribute to Email property on RegisterViewModel
+	[ValidEmailDomain(allowedDomain: "pragimtech.com",
+        ErrorMessage = "Email domain must be pragimtech.com")]
+
+Extended IdentityUser
+	-add new class in models folder: ApplicationUser: IdentityUser 
+		--with the properties you want (City was added)
+	-change AppDbContext: IdentityDbContext<ApplicationUser>
+	-Add-Migration Extended_IdentityUser
+	-Update-Database
+	-Add City property in RegisterViewModel
+	-change Register action method to create ApplictionUser instead of IdentityUser 
+	-add City tag-helper in Register View:	
+		<div class="form-group">
+                	<label asp-for="City"></label>
+                	<input asp-for="City" class="form-control" />
+            	</div>
+	-finally change all IdentityUser to ApplicationUser by hitting ctrl+shift+f and replace
+
+------------------Create Role controller and view to add roles---------------------------
+	-Controller:
+	public class AdministrationController : Controller
+	{
+    		private readonly RoleManager<IdentityRole> roleManager;
+
+    		public AdministrationController(RoleManager<IdentityRole> roleManager)
+    		{
+        		this.roleManager = roleManager;
+    		}
+	}
+	-View:
+<form asp-action="CreateRole" method="post" class="mt-3">
+    <div asp-validation-summary="All" class="text-danger">
+    </div>
+    <div class="form-group row">
+        <label asp-for="RoleName" class="col-sm-2 col-form-label"></label>
+        <div class="col-sm-10">
+            <input asp-for="RoleName" class="form-control" placeholder="Name">
+            <span asp-validation-for="RoleName" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-sm-10">
+            <button type="submit" class="btn btn-primary" style="width:auto">
+                Create Role
+            </button>
+        </div>
+    </div>
+</form>
+	-ViewModel:
+	public class CreateRoleViewModel
+    	{
+        [Required]
+        [Display(Name = "Role")]
+        public string RoleName { get; set; }
+    	}
+
+--------------Create action method and view to list all of the roles created---------------------
+	-method in AdminController:
+	[HttpGet]
+	public IActionResult ListRoles()
+	{
+    		var roles = roleManager.Roles;
+    		return View(roles);
+	}
+	-inject RoleManager into Admin Controller
+	private readonly RoleManager<IdentityRole> roleManager;
+
+        public AdministrationController(RoleManager<IdentityRole> roleManager)
+        {
+            this.roleManager = roleManager;
+        }
+	-view:
+@model IEnumerable<IdentityRole>
+
+@{
+    ViewBag.Title = "All Roles";
+}
+
+<h1>All Roles</h1>
+
+@if (Model.Any())
+{
+    <a class="btn btn-primary mb-3" style="width:auto" asp-action="CreateRole"
+       asp-controller="administration">Add new role</a>
+
+    foreach (var role in Model)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                Role Id : @role.Id
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">@role.Name</h5>
+            </div>
+            <div class="card-footer">
+                <a href="#" class="btn btn-primary">Edit</a>
+                <a href="#" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            No roles created yet
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                Use the button below to create a role
+            </h5>
+            <a class="btn btn-primary" style="width:auto"
+               asp-controller="administration" asp-action="CreateRole">
+                Create Role
+            </a>
+        </div>
+    </div>
+}
+

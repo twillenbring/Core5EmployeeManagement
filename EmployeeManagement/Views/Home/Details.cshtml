@@ -1,0 +1,36 @@
+﻿@model HomeDetailsViewModel
+
+@{
+    ViewBag.Title = "Employee Details";
+    //dynamic property to set photopath
+    //?? if photopath property is null then use "noimage.jpg"
+    var photoPath = "~/images/" + (Model.Employee.PhotoPath ?? "noimage.jpg");
+}
+
+<div class="row justify-content-center m-3">
+    <div class="col-sm-8">
+        <div class="card">
+            <div class="card-header">
+                <h1>@Model.Employee.Name</h1>
+            </div>
+
+            <div class="card-body text-center">
+                <img class="card-img-top" src="@photoPath" asp-append-version="true" />
+
+                <h4>Employee ID : @Model.Employee.Id</h4>
+                <h4>Email : @Model.Employee.Email</h4>
+                <h4>Department : @Model.Employee.Department</h4>
+
+            </div>
+            <div class="card-footer text-center">
+                <a asp-controller="home" asp-action="index" class="btn btn-primary">Back</a>
+                <a asp-controller="home" asp-action="edit" asp-route-id="@Model.Employee.Id"
+                   class="btn btn-primary m-1">Edit</a>
+                <a asp-controller="home" asp-action="DeleteEmployee"
+                   asp-route-id="@Model.Employee.Id" class="btn btn-danger m-1"
+                   onclick="return confirm('Are you sure you want to delete user: @Model.Employee.Name ?')">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+

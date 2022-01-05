@@ -1,0 +1,29 @@
+2020-08-31 10:04:21.4068|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 10:04:21.5678|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 10:04:21.5742|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 10:08:17.3431|TRACE|EmployeeManagement.Models.SQLEmployeeRepository|Trace log
+2020-08-31 10:08:17.3431|INFO|EmployeeManagement.Models.SQLEmployeeRepository|Info log
+2020-08-31 10:08:17.5229|WARN|EmployeeManagement.Models.SQLEmployeeRepository|Warning log
+2020-08-31 10:49:49.5200|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 10:49:49.6892|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 10:49:49.6962|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 10:50:13.0713|ERROR|Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware|An unhandled exception has occurred while executing the request.
+2020-08-31 10:52:52.2065|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 10:52:52.3201|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 10:52:52.3567|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 19:57:36.7156|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 19:57:36.8529|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 19:57:36.8529|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 20:09:31.9160|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 20:09:31.9753|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 20:09:31.9824|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 20:14:10.7772|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 20:14:10.8584|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 20:14:10.8584|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 20:32:50.4900|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 20:32:50.5685|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 20:32:50.5753|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
+2020-08-31 20:32:51.0452|ERROR|Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware|An unhandled exception has occurred while executing the request.
+2020-08-31 20:33:42.0343|INFO|Microsoft.Hosting.Lifetime|Application started. Press Ctrl+C to shut down.
+2020-08-31 20:33:42.1137|INFO|Microsoft.Hosting.Lifetime|Hosting environment: Development
+2020-08-31 20:33:42.1203|INFO|Microsoft.Hosting.Lifetime|Content root path: C:\Users\Owner\Desktop\EmployeeManagement\EmployeeManagement
